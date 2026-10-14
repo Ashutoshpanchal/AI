@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Data Engineering Assistant — Architecture</title>
+<style>
+:root{--bg:#f5f7fb;--ink:#172033;--muted:#68748a;--line:#dce3ee;--panel:#fff;--blue:#3268e8;--blue2:#eaf0ff;--teal:#087f8c;--teal2:#e3f7f7;--orange:#a95b08;--orange2:#fff1df;--red:#b4233a;--red2:#fff0f2;--green:#137a4b;--green2:#e6f7ee;--shadow:0 12px 35px rgba(30,48,82,.07)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button{font:inherit;cursor:pointer;color:inherit}
+.top{background:#fff;border-bottom:1px solid var(--line);padding:17px clamp(18px,4vw,58px);display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand{display:flex;gap:12px;align-items:center;font-weight:800;letter-spacing:-.03em;font-size:16px}
+.logo{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,#3268e8,#35b8bd);color:white;display:grid;place-items:center;font-weight:900}
+.pill{font-size:11px;color:#44516b;background:#f0f3f9;border:1px solid #e2e7f0;border-radius:999px;padding:5px 9px;font-weight:700}
+.top-right{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px}
+.hero{padding:34px clamp(18px,4vw,58px) 18px;max-width:1500px;margin:auto}
+.eyebrow{text-transform:uppercase;letter-spacing:.14em;color:var(--blue);font-size:11px;font-weight:800}
+.hero h1{font-size:clamp(28px,3.2vw,43px);letter-spacing:-.05em;line-height:1.08;margin:8px 0 12px}
+.hero p{max-width:780px;color:var(--muted);font-size:15px;margin:0}
+.layout{display:grid;grid-template-columns:260px minmax(460px,1fr) 340px;gap:16px;padding:14px clamp(18px,4vw,58px) 36px;max-width:1500px;margin:auto;align-items:start}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:17px;box-shadow:var(--shadow);overflow:hidden}
+.panel-head{padding:17px 18px 13px;border-bottom:1px solid #edf0f6}
+.panel-head h2,.panel-head h3{margin:0;font-size:14px;letter-spacing:-.02em}
+.panel-head p{margin:5px 0 0;color:var(--muted);font-size:12px}
+.cases{padding:10px}
+.case-btn{display:block;width:100%;text-align:left;border:1px solid transparent;background:transparent;border-radius:12px;padding:12px;margin:3px 0}
+.case-btn:hover{background:#f7f9fd}
+.case-btn.active{background:var(--blue2);border-color:#cbd8ff}
+.case-num{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}
+.case-btn strong{display:block;font-size:13px;margin:3px 0}
+.case-btn small{display:block;color:var(--muted);font-size:11px;line-height:1.45}
+.ticket-box{margin:10px;padding:13px;border:1px dashed #c9d3e2;border-radius:12px;background:#fafbfe}
+.ticket-box label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:800}
+.ticket-box b{display:block;margin:4px 0}
+.ticket-box p{margin:0;color:var(--muted);font-size:11px}
+.center{min-width:0}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);background:#fcfdff}
+.toolbar h2{font-size:14px;margin:0}
+.toolbar span{font-size:11px;color:var(--muted)}
+.canvas{padding:18px;min-height:520px;background-image:radial-gradient(#dce3ef .8px,transparent .8px);background-size:17px 17px}
+.flow{display:flex;flex-direction:column;align-items:center;gap:0;max-width:640px;margin:0 auto}
+.node{width:min(100%,490px);background:#fff;border:1px solid #d8e0ec;border-radius:13px;padding:12px 14px;display:grid;grid-template-columns:38px 1fr auto;gap:11px;align-items:center;box-shadow:0 4px 12px rgba(31,47,79,.04);text-align:left;transition:.18s}
+.node:hover,.node.selected{border-color:#7c9cff;box-shadow:0 0 0 3px rgba(50,104,232,.09)}
+.node.selected{background:#f9fbff}
+.icon{height:36px;width:36px;border-radius:10px;display:grid;place-items:center;background:#edf2ff;color:var(--blue);font-size:17px;font-weight:800}
+.node.permission .icon{background:var(--orange2);color:var(--orange)}
+.node.execution .icon{background:var(--teal2);color:var(--teal)}
+.node.verification .icon{background:var(--green2);color:var(--green)}
+.node strong{display:block;font-size:13px}
+.node p{font-size:11px;color:var(--muted);margin:2px 0 0}
+.tag{font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#53627a;background:#f1f4f9;border-radius:5px;padding:4px 6px;white-space:nowrap}
+.arrow{height:27px;width:2px;background:#c7d2e4;position:relative}
+.arrow:after{content:"";position:absolute;bottom:0;left:-4px;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid #9aabc4}
+.branch{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin-top:14px}
+.branch-card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:12px;font-size:11px;text-align:left}
+.branch-card b{display:block;font-size:12px;margin-bottom:4px}
+.branch-card.pass{border-color:#b8e3cc;background:#f5fcf8}
+.branch-card.retry{border-color:#f0c5cc;background:#fff8f9}
+.branch-card p{margin:0;color:var(--muted)}
+.branch-card.selected{box-shadow:0 0 0 3px rgba(50,104,232,.09)}
+.inside-actions{margin:13px 0 4px;width:100%;border:1px solid #cbd8ff;background:#f5f8ff;border-radius:14px;padding:13px}
+.inside-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.inside-title strong{font-size:12px;color:#2348b8}
+.inside-title span{font-size:10px;color:var(--muted)}
+.action-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.action{background:#fff;border:1px solid #d5def5;border-radius:9px;padding:9px 8px;text-align:left;min-height:78px}
+.action:hover,.action.active{border-color:#3268e8;background:#eef3ff}
+.action b{display:block;font-size:11px}
+.action small{display:block;color:var(--muted);font-size:10px;margin-top:4px}
+.detail{padding:16px;max-height:calc(100vh - 220px);overflow:auto}
+.detail .kicker{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);font-weight:800}
+.detail h2{font-size:19px;line-height:1.2;letter-spacing:-.03em;margin:6px 0 8px}
+.detail > p{font-size:12px;color:var(--muted);margin:0 0 14px}
+.detail-section{border-top:1px solid #edf0f6;padding:12px 0}
+.detail-section h3{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#56647c;margin:0 0 7px}
+.detail-section p,.detail-section li{font-size:12px;color:#44516a}
+.detail-section p{margin:0}
+.detail-section ul{padding-left:17px;margin:0}
+.detail-section li+li{margin-top:6px}
+.step-table{width:100%;border-collapse:collapse;font-size:12px}
+.step-table th{text-align:left;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#56647c;padding:0 8px 6px 0}
+.step-table td{vertical-align:top;padding:6px 8px 6px 0;border-top:1px solid #edf0f6}
+.step-table td:first-child{font-weight:700;white-space:nowrap}
+.comment{font:12px/1.55 ui-sans-serif,system-ui,sans-serif;white-space:pre-wrap;background:#f6f8fc;border:1px solid #e7ebf3;border-radius:8px;padding:10px;color:#33415d;margin:0}
+.lower{max-width:1500px;margin:0 auto;padding:0 clamp(18px,4vw,58px) 44px}
+.lower-head{display:flex;justify-content:space-between;align-items:end;gap:18px;margin:8px 0 13px}
+.lower-head h2{margin:0;font-size:21px;letter-spacing:-.04em}
+.lower-head p{margin:4px 0 0;color:var(--muted);font-size:12px}
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.info-card{background:#fff;border:1px solid var(--line);border-radius:15px;padding:17px;box-shadow:var(--shadow)}
+.info-card .mini-icon{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:#edf2ff;color:var(--blue);font-weight:900;margin-bottom:11px}
+.info-card h3{font-size:14px;margin:0 0 6px}
+.info-card p{font-size:12px;color:var(--muted);margin:0 0 9px}
+.info-card ul{font-size:11px;color:#43516a;padding-left:17px;margin:0}
+.info-card li+li{margin-top:5px}
+.warning{border-left:3px solid #e5a23c;padding:9px 11px;background:#fff8ed;border-radius:0 8px 8px 0;font-size:11px;color:#704715;margin-top:10px}
+.footer{max-width:1500px;margin:auto;padding:0 clamp(18px,4vw,58px) 30px;color:#8a94a7;font-size:12px}
+.right-panel{position:sticky;top:16px}
+@media(max-width:1100px){.layout{grid-template-columns:220px minmax(0,1fr)}.right-panel{grid-column:1 / -1;position:static}.info-grid{grid-template-columns:1fr 1fr}.detail{max-height:none}}
+@media(max-width:720px){.layout{grid-template-columns:1fr}.canvas{padding:12px}.node{grid-template-columns:34px 1fr}.node .tag{grid-column:2;justify-self:start}.branch{grid-template-columns:1fr}.info-grid{grid-template-columns:1fr}.top-right{display:none}.hero{padding-top:25px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><div class="logo">∑</div><div>Data Engineering Assistant <span class="pill">Architecture</span></div></div>
+  <div class="top-right"><span>Three playbooks</span><span>·</span><span>One control plane</span></div>
+</header>
+<section class="hero">
+  <div class="eyebrow">Architecture</div>
+  <h1>Data Engineering Assistant</h1>
+  <p>Open a box. The boxes inside it are the next level. Open one of those for the detail. The run ends as a Jira comment with a link to the HTML report.</p>
+</section>
+<main class="layout">
+  <aside class="panel">
+    <div class="panel-head"><h2>Choose a playbook</h2><p>Same entry. The Solution Agent changes the plan.</p></div>
+    <div class="cases" id="cases"></div>
+    <div class="ticket-box">
+      <label>Example Jira ticket</label>
+      <b id="ticketId"></b>
+      <p id="ticketSummary"></p>
+    </div>
+  </aside>
+  <section class="panel center">
+    <div class="toolbar"><h2 id="flowTitle">Playbook flow</h2><span>Click a box, then a box inside it</span></div>
+    <div class="canvas">
+      <div class="flow" id="flow">
+        <button type="button" class="node" data-node="ticket"><div class="icon">J</div><div><strong>Jira ticket</strong><p>Assigned to the AI user</p></div><span class="tag">Entry</span></button>
+        <div class="arrow"></div>
+        <button type="button" class="node solution" data-node="solution"><div class="icon">◎</div><div><strong>Solution Agent</strong><p>Classify the ticket and write the plan</p></div><span class="tag">Reason</span></button>
+        <div id="solutionTray"></div>
+        <div class="arrow"></div>
+        <button type="button" class="node permission" data-node="permission"><div class="icon">⌑</div><div><strong>Permission Agent</strong><p>Check each action before it runs</p></div><span class="tag">Gate</span></button>
+        <div class="arrow"></div>
+        <button type="button" class="node execution" data-node="execution"><div class="icon">⚙</div><div><strong>Execution Agent</strong><p>Run the plan with the allowed tools</p></div><span class="tag">Act</span></button>
+        <div id="executionTray"></div>
+        <div class="arrow"></div>
+        <button type="button" class="node verification" data-node="verification"><div class="icon">✓</div><div><strong>Verification Agent</strong><p>Check the proof for this ticket</p></div><span class="tag">Prove</span></button>
+        <div class="branch">
+          <button type="button" class="branch-card pass" data-node="pass"><b>Proof passes</b><p>The report is written. The Jira comment links to it.</p></button>
+          <button type="button" class="branch-card retry" data-node="retry"><b>Proof fails</b><p>Back to the Solution Agent, up to three attempts. A missing permission stops.</p></button>
+        </div>
+        <div class="arrow"></div>
+        <button type="button" class="node" data-node="comment"><div class="icon">J</div><div><strong>Jira comment</strong><p>Short result, plus the report link</p></div><span class="tag">Exit</span></button>
+      </div>
+    </div>
+  </section>
+  <aside class="panel right-panel">
+    <div class="panel-head"><h2>Detail card</h2><p id="detailSubtitle">Selected box</p></div>
+    <div class="detail" id="detail"></div>
+  </aside>
+</main>
+<section class="lower">
+  <div class="lower-head">
+    <div>
+      <h2>Used on every playbook</h2>
+      <p>The gate, the connections, and the database sit outside the three plans.</p>
+    </div>
+  </div>
+  <div class="info-grid">
+    <article class="info-card">
+      <div class="mini-icon">⛨</div>
+      <h3>Guardrails</h3>
+      <p>Permission checks the action and the resource. A live connection is not enough.</p>
+      <ul>
+        <li>Reads are allowed. Production writes, DAG triggers, and grants are not.</li>
+        <li>A missing permission goes to the Jira comment. It does not go back to the planner.</li>
+        <li>A failed proof goes back to the Solution Agent with a different hypothesis, up to three times.</li>
+        <li>After the third miss, the report says the cause is unproved and includes no diff.</li>
+        <li>Secrets stay in the secret store. They are not written into the prompt or Postgres.</li>
+      </ul>
+    </article>
+    <article class="info-card">
+      <div class="mini-icon">⌘</div>
+      <h3>MCP and scope</h3>
+      <p>Each playbook names the connections it needs. The scope is the resource, not the whole system.</p>
+      <ul>
+        <li><b>Jira.</b> Read the assigned ticket. Write one comment with the report link.</li>
+        <li><b>dbt.</b> <code>manifest.json</code> and <code>run_results.json</code>. No <code>dbt run</code> in production.</li>
+        <li><b>Snowflake.</b> Read-only role, statement timeout, credit cap. No insert, update, delete, merge, copy, or drop.</li>
+        <li><b>Airflow.</b> Task state and logs. No trigger, clear, retry, or backfill.</li>
+        <li><b>GitHub.</b> The dbt repo and the DAG repo, the file the plan named. A branch and a diff. No push to the default branch.</li>
+        <li><b>Source API.</b> The contract or the day named in the ticket.</li>
+      </ul>
+    </article>
+    <article class="info-card">
+      <div class="mini-icon">▤</div>
+      <h3>Storage</h3>
+      <p>The warehouse stays the warehouse. The run is stored beside it.</p>
+      <ul>
+        <li><b>Postgres.</b> The run, the asset graph, the plan, the evidence list, and the 1–5 rating.</li>
+        <li><b>pgvector.</b> Ticket text, logs, and SQL, so a later run can find a similar incident.</li>
+        <li><b>GitHub.</b> The diff, on a branch. The report links to it.</li>
+        <li><b>Secret store.</b> Source credentials. The model never sees them.</li>
+        <li><b>Snowflake.</b> Business data. The agent reads it and does not copy the table into Postgres.</li>
+      </ul>
+      <div class="warning">There is no queue worker on this path. FastAPI accepts the assignment and the Solution Agent starts the plan.</div>
+    </article>
+  </div>
+</section>
+<footer class="footer">Click a box to open it. Click a box inside it to read the detail.</footer>
+<script>
+const playbooks = {
+  mismatch: {
+    label: "Metric mismatch",
+    blurb: "The numbers do not match. No task failed.",
+    ticket: "DE-1842 · Revenue mismatch",
+    summary: "fct_revenue is $1,840,220. The billing API is $2,091,440 for 13 Oct 2026. The gap is $251,220.",
+    classify: "Mismatch. The ticket says the numbers do not match, and no Airflow task failed.",
+    proof: "The rows at the broken hop equal the missing money. Here, 412 null-status orders sum to $251,220.",
+    unproved: "If those rows do not sum to $251,220, the Solution Agent tries another hop. After three attempts the report says the cause is unproved and has no diff.",
+    comment: "Revenue in fct_revenue is $251,220 below the billing API for 13 Oct 2026.\nstg_orders drops rows where status is null, and billing still counts those orders.\n\nReport: https://assistant.example/runs/DE-1842",
+    steps: [
+      {
+        name: "Lineage",
+        blurb: "billing API → raw table → stg_orders → fct_revenue",
+        does: "Finds the path: billing API → raw table → stg_orders → fct_revenue.",
+        mcp: "dbt MCP. Reads manifest.json for model names and depends_on. Scope is that manifest, not a dbt run.",
+        guard: "No dbt run against production. No warehouse query in this step.",
+        storage: "The path is stored on the run in Postgres."
+      },
+      {
+        name: "Compare",
+        blurb: "The same total at each hop",
+        does: "Runs the same total at each hop. The first hop where the money changes is the break.",
+        mcp: "Snowflake MCP, read-only SELECT on the raw table, stg_orders, and fct_revenue for 13 Oct 2026. Billing API MCP, the aggregate for that day.",
+        guard: "SELECT only, with a statement timeout and a credit cap. No insert, update, delete, merge, copy, or drop. The billing credential stays in the secret store.",
+        storage: "The SQL text goes to pgvector. The four totals go on the run in Postgres."
+      },
+      {
+        name: "Cause",
+        blurb: "412 rows sum to $251,220",
+        does: "Opens the file at that hop and checks the rows. For DE-1842, 412 null-status orders sum to $251,220, which equals the gap.",
+        mcp: "GitHub MCP, dbt repo only: models/staging/stg_orders.sql and commit a1c3e9. Snowflake MCP, one aggregate on the null-status rows.",
+        guard: "That file and the commits on its path. No other repository, no secret, no push to the default branch. One aggregate select, no write.",
+        storage: "The file path, the commit, and the row sum are stored on the run in Postgres."
+      }
+    ]
+  },
+  failure: {
+    label: "Pipeline failure",
+    blurb: "A task failed and the retries are exhausted.",
+    ticket: "DE-1901 · orders_dbt failed",
+    summary: "orders_dbt failed at 07:15 UTC after two retries. The log says invalid identifier CUSTOMER_ID.",
+    classify: "Pipeline failure. The ticket was opened because the task failed.",
+    proof: "The suggested column is the one named in the error. The model selects customer_id. The live column is customer_key.",
+    unproved: "If the live schema still has customer_id, the log and the schema do not agree. The Solution Agent looks at another failed node, up to three times, then reports the cause unproved.",
+    comment: "orders_dbt failed at 07:15 UTC: invalid identifier CUSTOMER_ID.\nThe billing source column is now customer_key. Select customer_key as customer_id in stg_orders.sql.\n\nReport: https://assistant.example/runs/DE-1901",
+    steps: [
+      {
+        name: "Log",
+        blurb: "invalid identifier CUSTOMER_ID",
+        does: "Reads the Airflow log. orders_dbt failed at 07:15 UTC after two retries: invalid identifier CUSTOMER_ID.",
+        mcp: "Airflow MCP. The DAG run, the task state, the try count, and the task log for orders_dbt.",
+        guard: "Metadata and logs only. No trigger, clear, retry, or backfill.",
+        storage: "The log text goes to pgvector. The error and the timestamp go on the run in Postgres."
+      },
+      {
+        name: "Model",
+        blurb: "stg_orders.sql still selects customer_id",
+        does: "Opens the model the failed task ran. stg_orders.sql still selects customer_id.",
+        mcp: "dbt MCP, run_results.json, to name the failed node. GitHub MCP, the dbt repo, models/staging/stg_orders.sql.",
+        guard: "No dbt run. That file and the commits on its path only.",
+        storage: "The failed node and the file path are stored on the run in Postgres."
+      },
+      {
+        name: "Schema",
+        blurb: "The live column is customer_key",
+        does: "Checks the live source column in Snowflake. It is customer_key. customer_id is gone.",
+        mcp: "Snowflake MCP. INFORMATION_SCHEMA for the source table named by the model.",
+        guard: "A metadata select. The same read-only role, timeout, and credit cap. No write.",
+        storage: "The column names are stored on the run in Postgres."
+      }
+    ]
+  },
+  pipeline: {
+    label: "New pipeline",
+    blurb: "Draft the pipeline on a branch. Do not deploy it.",
+    ticket: "DE-2030 · Create payments pipeline",
+    summary: "Build a daily pipeline from the payments API. The report holds the DAG, the dbt models, and the tests.",
+    classify: "New pipeline. The ticket asks for a pipeline. It does not report a failed task or a wrong number.",
+    proof: "The project parses, the DAG imports, and the tests exist. Nothing runs in production.",
+    unproved: "If the project does not parse, the Solution Agent revises the draft, up to three times. It does not trigger the DAG to see what happens.",
+    comment: "Payments pipeline is drafted on branch de-2030-payments.\nstg_payments, fct_payments, payments_daily, and the order_id tests parse.\n\nReport: https://assistant.example/runs/DE-2030",
+    steps: [
+      {
+        name: "Contract",
+        blurb: "order_id, amount, paid_at",
+        does: "Reads the payments API contract: order_id, amount, and paid_at, plus the page size and the schedule the ticket asks for.",
+        mcp: "Source API MCP. The endpoint named in DE-2030. The credential stays in the secret store.",
+        guard: "Read the contract. No write to the source. The secret is not copied into the prompt.",
+        storage: "The field list and the schedule are stored on the run in Postgres."
+      },
+      {
+        name: "Model",
+        blurb: "stg_payments and fct_payments",
+        does: "Drafts the dbt staging model and the mart: stg_payments and fct_payments.",
+        mcp: "GitHub MCP. The dbt repo, on branch de-2030-payments.",
+        guard: "New files on that branch. No push to the default branch. No dbt run in production.",
+        storage: "The files live in GitHub. The branch name is stored on the run in Postgres."
+      },
+      {
+        name: "DAG",
+        blurb: "payments_daily",
+        does: "Drafts the Airflow DAG payments_daily for a daily load of the payments API.",
+        mcp: "GitHub MCP. The Airflow DAG repo, same branch.",
+        guard: "The DAG file is written on the branch. Airflow is not told to trigger it.",
+        storage: "The DAG file lives in GitHub. The path is stored on the run in Postgres."
+      },
+      {
+        name: "Test",
+        blurb: "unique and not_null on order_id",
+        does: "Drafts dbt tests: unique and not_null on order_id.",
+        mcp: "GitHub MCP. The dbt repo, same branch, the schema file next to stg_payments.",
+        guard: "The tests are proposed. They are not applied in production, and a missing test is not marked warn to go green.",
+        storage: "The test file lives in GitHub. The test names are stored on the run in Postgres."
+      }
+    ]
+  }
+};
+
+const state = { caseKey: "mismatch", node: "solution", step: null };
+
+function esc(value) {
+  return String(value).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+}
+
+function current() {
+  return playbooks[state.caseKey];
+}
+
+function section(title, body) {
+  return `<div class="detail-section"><h3>${esc(title)}</h3>${body}</div>`;
+}
+
+function stepTable(steps) {
+  const rows = steps.map((step) => `<tr><td>${esc(step.name)}</td><td>${esc(step.does)}</td></tr>`).join("");
+  return `<table class="step-table"><thead><tr><th>Agent</th><th>What it does</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function stepCard(step, kicker) {
+  return `<div class="kicker">${esc(kicker)}</div><h2>${esc(step.name)}</h2><p>${esc(step.does)}</p>`
+    + section("MCP and scope", `<p>${esc(step.mcp)}</p>`)
+    + section("Guardrail", `<p>${esc(step.guard)}</p>`)
+    + section("Storage", `<p>${esc(step.storage)}</p>`);
+}
+
+function renderCases() {
+  document.getElementById("cases").innerHTML = Object.entries(playbooks).map(([key, item], index) => `
+    <button type="button" class="case-btn${key === state.caseKey ? " active" : ""}" data-case="${key}">
+      <span class="case-num">Case ${String(index + 1).padStart(2, "0")}</span>
+      <strong>${esc(item.label)}</strong>
+      <small>${esc(item.blurb)}</small>
+    </button>`).join("");
+}
+
+function renderChrome() {
+  const item = current();
+  renderCases();
+  document.getElementById("ticketId").textContent = item.ticket;
+  document.getElementById("ticketSummary").textContent = item.summary;
+  document.getElementById("flowTitle").textContent = "Playbook flow · " + item.label;
+  document.querySelectorAll(".node, .branch-card").forEach((node) => {
+    node.classList.toggle("selected", node.dataset.node === state.node);
+  });
+}
+
+function renderTrays() {
+  const item = current();
+  const buttons = item.steps.map((step, index) => `
+    <button type="button" class="action${state.step === index ? " active" : ""}" data-step="${index}">
+      <b>${esc(step.name)}</b><small>${esc(step.blurb)}</small>
+    </button>`).join("");
+  document.getElementById("solutionTray").innerHTML = state.node === "solution" ? `
+    <div class="inside-actions">
+      <div class="inside-title"><strong>What it will do</strong><span>${esc(item.ticket.split(" · ")[0])}</span></div>
+      <div class="action-grid">${buttons}</div>
+    </div>` : "";
+  document.getElementById("executionTray").innerHTML = state.node === "execution" ? `
+    <div class="inside-actions">
+      <div class="inside-title"><strong>Runs this plan</strong><span>Same actions, now with tools</span></div>
+      <div class="action-grid">${buttons}</div>
+    </div>` : "";
+}
+
+function renderDetail() {
+  const item = current();
+  const subtitle = document.getElementById("detailSubtitle");
+  const detail = document.getElementById("detail");
+  if (state.step !== null && (state.node === "solution" || state.node === "execution")) {
+    const step = item.steps[state.step];
+    const where = state.node === "solution" ? "Solution Agent plans this" : "Execution Agent runs this";
+    subtitle.textContent = where;
+    detail.innerHTML = stepCard(step, where);
+    return;
+  }
+  const cards = {
+    ticket: () => {
+      subtitle.textContent = "Entry";
+      return `<div class="kicker">Entry</div><h2>Jira ticket</h2><p>${esc(item.ticket)}</p>`
+        + section("What it does", `<p>${esc(item.summary)} A run starts because this ticket is assigned to the AI user. A ticket assigned to a developer does not start a run.</p>`)
+        + section("MCP and scope", "<p>Jira MCP. Read the key, summary, description, and assignee of this ticket.</p>")
+        + section("Guardrail", "<p>Read only at this step. The comment is written at the end, on this same ticket. The ticket is not reassigned.</p>")
+        + section("Storage", "<p>Postgres stores the run and the ticket key. pgvector stores the ticket text.</p>");
+    },
+    solution: () => {
+      subtitle.textContent = "What the Solution Agent will do";
+      return `<div class="kicker">${esc(item.label)}</div><h2>Solution Agent</h2><p>${esc(item.classify)}</p>`
+        + section("What it will do", stepTable(item.steps))
+        + section("Proof it will demand", `<p>${esc(item.proof)}</p>`)
+        + section("If the proof fails", `<p>${esc(item.unproved)}</p>`)
+        + section("MCP and scope", `<p>Jira MCP, to read the ticket and classify it. This agent does not call Snowflake, Airflow, or GitHub itself. It names those calls for the Execution Agent: ${esc(item.steps.map((step) => step.name).join(", "))}.</p>`)
+        + section("Guardrail", "<p>Three attempts. Each new attempt needs a different hypothesis. A missing permission is not a new hypothesis, so that stop does not come back here.</p>")
+        + section("Storage", "<p>Postgres stores each plan version, the classification, and the attempt count.</p>");
+    },
+    permission: () => {
+      subtitle.textContent = "Gate";
+      const needed = item.steps.map((step) => `<li><b>${esc(step.name)}.</b> ${esc(step.mcp)}</li>`).join("");
+      return `<div class="kicker">Gate</div><h2>Permission Agent</h2><p>Checks the actions in this plan before any of them run.</p>`
+        + section("What it checks", `<ul>${needed}</ul>`)
+        + section("Guardrail", "<p>A successful connection does not prove the action is allowed. The check is the action plus the resource. If a scope is missing, the run stops and the Jira comment names the missing access. The Solution Agent is not asked to route around it.</p>")
+        + section("MCP and scope", "<p>The configured MCP tools, plus the role behind each one. Read and write are separate. This page's samples all have the read they need. The new pipeline also has branch write on the two allowlisted repos.</p>")
+        + section("Storage", "<p>Postgres stores the decision, the scope, and the denial reason. It does not store tokens.</p>");
+    },
+    execution: () => {
+      subtitle.textContent = "Act";
+      return `<div class="kicker">Act</div><h2>Execution Agent</h2><p>Runs the plan the Solution Agent wrote for ${esc(item.ticket.split(" · ")[0])}. Open a box inside it for that action.</p>`
+        + section("What it will do", stepTable(item.steps))
+        + section("Guardrail", "<p>Only the actions Permission allowed. Queries have a timeout and a row limit. A new pipeline writes files on the branch and does not deploy them.</p>")
+        + section("MCP and scope", `<p>${esc(item.steps.map((step) => step.name + ": " + step.mcp).join(" "))}</p>`)
+        + section("Storage", "<p>Each result is attached to the run in Postgres. SQL and logs also go to pgvector. Files for a new pipeline go to GitHub.</p>");
+    },
+    verification: () => {
+      subtitle.textContent = "Prove";
+      return `<div class="kicker">Prove</div><h2>Verification Agent</h2><p>Checks the evidence against the proof. It does not take the Execution Agent's word for it.</p>`
+        + section("Proof for this ticket", `<p>${esc(item.proof)}</p>`)
+        + section("If it fails", `<p>${esc(item.unproved)}</p>`)
+        + section("MCP and scope", "<p>Read-only. It reads the totals, the log, the schema, the file, or the parse result already collected. It does not open a new write.</p>")
+        + section("Storage", "<p>Postgres stores pass, fail, or blocked on the run, with the evidence it used.</p>");
+    },
+    pass: () => {
+      subtitle.textContent = "Exit";
+      return `<div class="kicker">Proof passes</div><h2>Report, then the Jira comment</h2><p>The HTML report holds the solution, the reasoning, the files that were read, and the diff. The comment on the ticket is short and links to that page.</p>`
+        + section("Comment", `<pre class="comment">${esc(item.comment)}</pre>`)
+        + section("Storage", "<p>Postgres stores the report path and, later, the reviewer's 1–5 rating. A second run on the same ticket gets a new report. The latest comment points at the latest report.</p>");
+    },
+    retry: () => {
+      subtitle.textContent = "Back to the Solution Agent";
+      return `<div class="kicker">Proof fails</div><h2>Replan, or stop</h2><p>${esc(item.unproved)}</p>`
+        + section("Guardrail", "<p>A failed proof returns here. A blocked permission does not. The blocked run writes the missing scope on the Jira comment and ends.</p>")
+        + section("Storage", "<p>Postgres stores the attempt count and the evidence that failed the proof.</p>");
+    },
+    comment: () => {
+      subtitle.textContent = "Exit";
+      return `<div class="kicker">End of the run</div><h2>Jira comment</h2><p>One comment on the same ticket. The ticket stays with the AI user.</p>`
+        + section("Comment", `<pre class="comment">${esc(item.comment)}</pre>`)
+        + section("MCP and scope", "<p>Jira MCP. One comment on this ticket, containing the report link. No edit of another person's ticket. No reassignment.</p>")
+        + section("Storage", "<p>Postgres stores the comment id and the report path on the run.</p>");
+    }
+  };
+  detail.innerHTML = cards[state.node]();
+}
+
+function render() {
+  renderChrome();
+  renderTrays();
+  renderDetail();
+}
+
+document.body.addEventListener("click", (event) => {
+  const step = event.target.closest("[data-step]");
+  const caseButton = event.target.closest("[data-case]");
+  const node = event.target.closest("[data-node]");
+  if (step) {
+    state.step = Number(step.dataset.step);
+    render();
+    return;
+  }
+  if (caseButton) {
+    state.caseKey = caseButton.dataset.case;
+    state.node = "solution";
+    state.step = null;
+    render();
+    return;
+  }
+  if (node) {
+    state.node = node.dataset.node;
+    state.step = null;
+    render();
+  }
+});
+
+render();
+</script>
+</body>
+</html>
